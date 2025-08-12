@@ -3,7 +3,12 @@
 import { useState, ChangeEvent, FormEvent } from "react";
 
 export default function Register() {
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+  });
   const [message, setMessage] = useState("");
 
   // 'e' is explicitly typed as a ChangeEvent for an HTMLInputElement
@@ -14,7 +19,7 @@ export default function Register() {
   // 'e' is explicitly typed as a FormEvent for an HTMLFormElement
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:5000/api/register", {
+    const res = await fetch("http://localhost:5000/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -30,6 +35,12 @@ export default function Register() {
         className="bg-white p-6 rounded shadow w-80"
       >
         <h2 className="text-2xl font-bold mb-4">Register</h2>
+        <input
+          name="name"
+          placeholder="Name"
+          className="border p-2 w-full mb-2"
+          onChange={handleChange}
+        />
         <input
           name="username"
           placeholder="Username"

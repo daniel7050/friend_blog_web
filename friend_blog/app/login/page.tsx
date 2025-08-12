@@ -14,7 +14,7 @@ export default function Login() {
   // 'e' is typed as a FormEvent for an HTMLFormElement
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:5000/api/login", {
+    const res = await fetch("http://localhost:5000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
