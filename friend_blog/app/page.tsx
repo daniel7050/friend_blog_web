@@ -1,5 +1,4 @@
 import React from "react";
-import "./globals.css";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -30,6 +29,15 @@ export default function HomePage() {
               className="text-blue-600 border border-blue-600 px-4 py-2 rounded-md hover:bg-blue-50"
             >
               Register
+            </Link>
+            <Link href="/posts" className="text-gray-600 hover:text-blue-600">
+              My Posts
+            </Link>
+            <Link
+              href="/posts/create"
+              className="text-white bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700"
+            >
+              Create Post
             </Link>
           </nav>
         </div>
