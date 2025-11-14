@@ -30,14 +30,8 @@ export default function HomePage() {
             >
               Register
             </Link>
-            <Link href="/posts" className="text-gray-600 hover:text-blue-600">
-              My Posts
-            </Link>
-            <Link
-              href="/posts/create"
-              className="text-white bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Create Post
+            <Link href="/feed" className="text-gray-600 hover:text-blue-600">
+              Feed
             </Link>
           </nav>
         </div>
