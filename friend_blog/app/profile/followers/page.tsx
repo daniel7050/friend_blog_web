@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../../../lib/api";
 
 type Follower = {
   id: string | number;
@@ -15,11 +16,8 @@ export default function FollowersPage() {
 
   const fetchFollowers = useCallback(async () => {
     if (!userId) return;
-    const res = await fetch(
-      `http://localhost:5000/api/follow/${userId}/followers`
-    );
-    const data = (await res.json()) as Follower[];
-    setFollowers(data);
+    const { res, data } = await apiFetch(`/api/follow/${userId}/followers`);
+    if (res && res.ok && data) setFollowers(data as Follower[]);
   }, [userId]);
 
   useEffect(() => {

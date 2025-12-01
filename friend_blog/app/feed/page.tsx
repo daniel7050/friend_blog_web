@@ -7,6 +7,7 @@ import {
   FormEvent,
 } from "react";
 import PostCard from "./PostCard";
+import { apiFetch } from "../../lib/api";
 
 type Post = {
   id: string;
@@ -28,15 +29,12 @@ export default function FeedPage() {
   // 🟢 Fetch all posts
   const fetchPosts = useCallback(async () => {
     try {
-      const res = await fetch(API_URL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = (await res.json()) as Post[];
-      setPosts(data);
+      const { res, data } = await apiFetch("/api/posts");
+      if (res && res.ok && data) setPosts(data as Post[]);
     } catch (error) {
       console.error("Error fetching posts:", error);
     }
-  }, [API_URL, token]);
+  }, []);
 
   useEffect(() => {
     fetchPosts();
@@ -55,12 +53,8 @@ export default function FeedPage() {
     const url = editingId ? `${API_URL}/${editingId}` : API_URL;
 
     try {
-      const res = await fetch(url, {
+      const { res } = await apiFetch(url.replace(API_URL, "/api/posts"), {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ content }),
       });
 
@@ -84,10 +78,7 @@ export default function FeedPage() {
   // 🔴 Delete Post
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiFetch(`/api/posts/${id}`, { method: "DELETE", raw: true });
       setMessage("Post deleted!");
       fetchPosts();
     } catch (error) {

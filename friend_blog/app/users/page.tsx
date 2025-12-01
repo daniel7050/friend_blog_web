@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../../lib/api";
 
 type User = {
   id: string | number;
@@ -9,21 +10,18 @@ type User = {
 };
 
 export default function UsersPage() {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<User[]>([]);
 
   const [following, setFollowing] = useState<string[]>([]);
 
-  const API_AUTH = "http://localhost:5000/api/auth/users";
   const API_FOLLOW = "http://localhost:5000/api/follow";
 
   const fetchUsers = useCallback(async (q = "") => {
-    const res = await fetch(`${API_AUTH}?q=${q}`);
-    const data = (await res.json()) as User[];
-    setUsers(data);
+    const { res, data } = await apiFetch(
+      `/api/auth/users?q=${encodeURIComponent(q)}`
+    );
+    if (res && res.ok && data) setUsers(data as User[]);
   }, []);
 
   const fetchFollowing = useCallback(async () => {
@@ -31,18 +29,17 @@ export default function UsersPage() {
       typeof window !== "undefined" ? localStorage.getItem("userId") : null;
     if (!userId) return;
 
-    const res = await fetch(`${API_FOLLOW}/${userId}/following`);
-    const data = (await res.json()) as User[];
-
-    setFollowing(data.map((u) => u.id.toString()));
+    const { res, data } = await apiFetch(`/api/follow/${userId}/following`);
+    if (res && res.ok && data)
+      setFollowing((data as User[]).map((u) => u.id.toString()));
   }, []);
 
   const toggleFollow = async (id: string) => {
     const isFollowing = following.includes(id);
 
-    await fetch(`${API_FOLLOW}/${id}`, {
+    await apiFetch(`${API_FOLLOW}/${id}`, {
       method: isFollowing ? "DELETE" : "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      raw: true,
     });
 
     fetchFollowing();

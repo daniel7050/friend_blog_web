@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { apiFetch } from "../../lib/api";
 
 interface Comment {
   id: string;
@@ -26,10 +27,7 @@ export default function PostCard({
   onEdit,
   onDelete,
 }: PostCardProps) {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-  const API_URL = "http://localhost:5000/api/posts";
+  // token and API_URL not needed here — apiFetch handles auth and base URL
 
   const [liked, setLiked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -38,33 +36,24 @@ export default function PostCard({
 
   // Fetch comments
   const loadComments = async () => {
-    const res = await fetch(`${API_URL}/${id}/comments`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    setComments(data);
+    const { res, data } = await apiFetch(`/api/posts/${id}/comments`);
+    if (res && res.ok && data) setComments(data as Comment[]);
   };
 
   // Like toggle
   const toggleLike = async () => {
-    const res = await fetch(`${API_URL}/${id}/like`, {
+    const { res, data } = await apiFetch(`/api/posts/${id}/like`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
     });
-    const data = await res.json();
-    setLiked(data.liked);
+    if (res && res.ok && data) setLiked(Boolean(data.liked));
   };
 
   // Submit comment
   const submitComment = async () => {
     if (!commentText.trim()) return;
 
-    await fetch(`${API_URL}/${id}/comments`, {
+    await apiFetch(`/api/posts/${id}/comments`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ content: commentText }),
     });
 

@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -12,6 +13,7 @@ export default function Register() {
   });
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const { register } = useAuth();
 
   // Handle input change
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -21,28 +23,14 @@ export default function Register() {
   // Handle form submission
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setMessage("");
 
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        // ✅ Save token for persistence
-        localStorage.setItem("token", data.token);
-
-        setMessage("Registration successful! 🎉 Redirecting...");
-        router.push("/feed"); // ✅ Redirect user to feed after registration
-      } else {
-        setMessage(data.message || "Registration failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("❌ Register error:", error);
-      setMessage("Something went wrong. Please try again later.");
+    const result = await register(form);
+    if (result.ok) {
+      setMessage("Registration successful! 🎉 Redirecting...");
+      router.push("/feed");
+    } else {
+      setMessage(result.message || "Registration failed. Please try again.");
     }
   };
 

@@ -1,9 +1,12 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState, ChangeEvent, FormEvent } from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
@@ -16,33 +19,14 @@ export default function Login() {
   // Handle form submit
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setMessage("");
 
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      console.log("Response status:", res); // Debugging line
-
-      const data = await res.json();
-
-      if (data.token) {
-        // Save token
-        localStorage.setItem("token", data.token);
-
-        // Show message
-        setMessage("Login successful! 🎉");
-
-        // Redirect to feed
-        router.push("/feed");
-      } else {
-        setMessage(data.error || "Login failed");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setMessage("Something went wrong. Try again later.");
+    const result = await login(form.email, form.password);
+    if (result.ok) {
+      setMessage("Login successful! 🎉");
+      router.push("/feed");
+    } else {
+      setMessage(result.message || "Login failed");
     }
   };
 
