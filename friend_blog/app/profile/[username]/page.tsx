@@ -9,8 +9,11 @@ async function getUser(username: string) {
 export default async function PublicProfile({
   params,
 }: {
-  params: { username: string };
+  params?: Promise<{ username: string }>;
 }) {
-  const user = await getUser(params.username);
+  const resolved = params ? await params : undefined;
+  const username = resolved?.username;
+  if (!username) return null;
+  const user = await getUser(username);
   return <ProfileCard user={user} />;
 }

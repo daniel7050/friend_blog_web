@@ -80,12 +80,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { ok: false, message: data.message || data.error };
     } catch (err: unknown) {
-      // safer extraction without `any`
-      type AxiosErr = { response?: { data?: { message?: string } } };
-      const msg =
-        typeof err === "object" && err !== null && "response" in err
-          ? (err as AxiosErr).response?.data?.message
-          : String(err);
+      type AxiosErr = {
+        response?: {
+          status?: number;
+          data?: { message?: string };
+        };
+      };
+      const axiosErr = err as AxiosErr;
+
+      // Handle rate limiting (429 Too Many Requests)
+      if (axiosErr?.response?.status === 429) {
+        return {
+          ok: false,
+          message:
+            "Too many login attempts. Please try again in a few minutes.",
+        };
+      }
+
+      const msg = axiosErr?.response?.data?.message || String(err);
       return { ok: false, message: msg || "Network error" };
     }
   };
@@ -106,11 +118,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { ok: false, message: data.message || data.error };
     } catch (err: unknown) {
-      type AxiosErr = { response?: { data?: { message?: string } } };
-      const msg =
-        typeof err === "object" && err !== null && "response" in err
-          ? (err as AxiosErr).response?.data?.message
-          : String(err);
+      type AxiosErr = {
+        response?: {
+          status?: number;
+          data?: { message?: string };
+        };
+      };
+      const axiosErr = err as AxiosErr;
+
+      // Handle rate limiting (429 Too Many Requests)
+      if (axiosErr?.response?.status === 429) {
+        return {
+          ok: false,
+          message:
+            "Too many registration attempts. Please try again in a few minutes.",
+        };
+      }
+
+      const msg = axiosErr?.response?.data?.message || String(err);
       return { ok: false, message: msg || "Network error" };
     }
   };

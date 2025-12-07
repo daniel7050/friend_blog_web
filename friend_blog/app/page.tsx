@@ -1,84 +1,10 @@
 // app/page.tsx
 import React from "react";
-import Link from "next/link";
 
 export default function HomePage() {
-  // quick runtime check for client-only storage
-  const isClient = typeof window !== "undefined";
-  const token = isClient ? localStorage.getItem("token") : null;
-
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Navbar */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">Friend Blog</h1>
-          <nav className="space-x-4 flex items-center">
-            <Link href="/" className="text-gray-600 hover:text-blue-600">
-              Home
-            </Link>
-
-            <Link href="/feed" className="text-gray-600 hover:text-blue-600">
-              Feed
-            </Link>
-
-            <Link href="/users" className="text-gray-600 hover:text-blue-600">
-              Find Users
-            </Link>
-
-            {/* Show profile-related links only when user is logged in */}
-            {token ? (
-              <>
-                <Link
-                  href="/profile"
-                  className="text-gray-600 hover:text-blue-600"
-                >
-                  Profile
-                </Link>
-
-                <Link
-                  href="/profile/followers"
-                  className="text-gray-600 hover:text-blue-600"
-                >
-                  Followers
-                </Link>
-
-                <Link
-                  href="/profile/following"
-                  className="text-gray-600 hover:text-blue-600"
-                >
-                  Following
-                </Link>
-              </>
-            ) : null}
-
-            {/* Auth actions */}
-            {!token ? (
-              <>
-                <Link
-                  href="/login"
-                  className="text-white bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-blue-600 border border-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 ml-2"
-                >
-                  Register
-                </Link>
-              </>
-            ) : (
-              <Link
-                href="/feed"
-                className="text-blue-600 border border-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 ml-2"
-              >
-                Dashboard
-              </Link>
-            )}
-          </nav>
-        </div>
-      </header>
+      {/* Navbar is rendered in the global layout */}
 
       {/* Hero Section */}
       <section className="bg-blue-50 py-16">

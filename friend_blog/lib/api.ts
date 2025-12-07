@@ -1,8 +1,12 @@
 const DEFAULT_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-type ApiFetchOptions = { raw?: boolean } & Record<string, unknown>;
-
+import type { AxiosRequestConfig } from "axios";
 import axios from "../app/utils/axios";
+
+type ApiFetchOptions = {
+  raw?: boolean;
+  body?: unknown;
+} & Partial<AxiosRequestConfig>;
 
 export type ApiRes = {
   ok: boolean;
@@ -21,7 +25,7 @@ export async function apiFetch(
   try {
     const axiosRes = await axios.request({
       url,
-      method: (opts.method as any) || "GET",
+      method: (opts.method as AxiosRequestConfig["method"]) || "GET",
       data: opts.body ? JSON.parse(String(opts.body)) : undefined,
       headers: opts.headers,
       // allow passing any other axios options

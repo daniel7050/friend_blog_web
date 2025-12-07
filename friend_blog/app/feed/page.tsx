@@ -21,23 +21,49 @@ export default function FeedPage() {
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const API_URL = "http://localhost:5000/api/posts";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-  // 🟢 Fetch all posts
-  const fetchPosts = useCallback(async () => {
-    try {
-      const { res, data } = await apiFetch("/api/posts");
-      if (res && res.ok && data) setPosts(data as Post[]);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    }
-  }, []);
+  // 🟢 Fetch all posts with cursor-based pagination
+  const fetchPosts = useCallback(
+    async (isLoadMore = false) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (isLoadMore && cursor) params.append("cursor", cursor);
+        params.append("limit", "10");
+
+        const { res, data } = await apiFetch(`/api/posts?${params.toString()}`);
+        if (res && res.ok && data) {
+          const postsData = data as {
+            items: Post[];
+            nextCursor: string | null;
+            hasNext: boolean;
+          };
+          if (isLoadMore) {
+            setPosts((prev) => [...prev, ...(postsData.items || [])]);
+          } else {
+            setPosts(postsData.items || []);
+          }
+          setCursor(postsData.nextCursor || null);
+          setHasMore(postsData.hasNext ?? true);
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cursor]
+  );
 
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(false);
   }, [fetchPosts]);
 
   // 🟢 Create or Update Post
@@ -62,7 +88,7 @@ export default function FeedPage() {
       setContent("");
       setEditingId(null);
       setMessage(editingId ? "Post updated!" : "Post created!");
-      fetchPosts();
+      fetchPosts(false);
     } catch (error) {
       console.error("Error saving post:", error);
       setMessage("Failed to save post");
@@ -80,7 +106,7 @@ export default function FeedPage() {
     try {
       await apiFetch(`/api/posts/${id}`, { method: "DELETE", raw: true });
       setMessage("Post deleted!");
-      fetchPosts();
+      fetchPosts(false);
     } catch (error) {
       console.error("Error deleting post:", error);
       setMessage("Failed to delete post");
@@ -116,18 +142,43 @@ export default function FeedPage() {
 
         {/* 🧾 Post List */}
         <div>
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <PostCard
-                key={post.id}
-                id={post.id}
-                content={post.content}
-                author={post.author?.username || "You"}
-                createdAt={post.createdAt ?? new Date().toISOString()}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            ))
+          {loading && posts.length === 0 ? (
+            // Skeleton Loader
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-lg shadow p-4 animate-pulse"
+                >
+                  <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              ))}
+            </div>
+          ) : posts.length > 0 ? (
+            <>
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  id={post.id}
+                  content={post.content}
+                  author={post.author?.username || "You"}
+                  createdAt={post.createdAt ?? new Date().toISOString()}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+              {hasMore && (
+                <button
+                  onClick={() => fetchPosts(true)}
+                  disabled={loading}
+                  className="w-full mt-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {loading ? "Loading..." : "Load More"}
+                </button>
+              )}
+            </>
           ) : (
             <p className="text-center text-gray-500">No posts yet.</p>
           )}

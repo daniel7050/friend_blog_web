@@ -2,9 +2,11 @@
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 import UserAvatar from "./UserAvatar";
+import { useNotifications } from "../hooks/useNotifications";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
 
   return (
     <header className="bg-white shadow-sm">
@@ -27,6 +29,17 @@ export default function Navbar() {
           </Link>
           <Link href="/users" className="text-gray-600 hover:text-blue-600">
             Find Users
+          </Link>
+          <Link
+            href="/notifications"
+            className="text-gray-600 hover:text-blue-600 relative"
+          >
+            🔔 Notifications
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </Link>
         </nav>
 
