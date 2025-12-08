@@ -16,6 +16,7 @@ interface PostCardProps {
   content: string;
   author: string;
   createdAt: string;
+  likesCount?: number;
   onEdit: (id: string, content: string) => void;
   onDelete: (id: string) => void;
 }
@@ -25,12 +26,14 @@ export default function PostCard({
   content,
   author,
   createdAt,
+  likesCount = 0,
   onEdit,
   onDelete,
 }: PostCardProps) {
   // token and API_URL not needed here — apiFetch handles auth and base URL
 
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(likesCount);
   const [comments, setComments] = useState<Comment[]>([]);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -52,8 +55,16 @@ export default function PostCard({
       method: "POST",
     });
     if (res && res.ok && data) {
-      const likeData = data as { liked?: boolean } | null;
-      if (likeData && typeof likeData.liked !== "undefined") {
+      const likeData = data as { liked?: boolean; likesCount?: number } | null;
+
+      // Prefer backend count if available, otherwise adjust locally
+      if (typeof likeData?.likesCount === "number") {
+        setLikeCount(Math.max(0, likeData.likesCount));
+      } else if (typeof likeData?.liked !== "undefined") {
+        setLikeCount((prev) => Math.max(0, prev + (likeData.liked ? 1 : -1)));
+      }
+
+      if (typeof likeData?.liked !== "undefined") {
         setLiked(Boolean(likeData.liked));
       }
     }
@@ -97,7 +108,10 @@ export default function PostCard({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
+    <div
+      className="bg-white rounded-lg shadow p-4 mb-4"
+      data-testid="post-card"
+    >
       <p className="text-gray-800">{content}</p>
 
       <div className="flex justify-between text-sm text-gray-600 mt-2">
@@ -105,13 +119,15 @@ export default function PostCard({
         <span>{new Date(createdAt).toLocaleString()}</span>
       </div>
 
-      <div className="flex gap-4 mt-4">
+      <div className="flex gap-4 mt-4 items-center">
         <button
           onClick={toggleLike}
           className="text-red-500 hover:text-red-700"
         >
           {liked ? "❤️ Liked" : "🤍 Like"}
         </button>
+
+        <span className="text-sm text-gray-600">{likeCount} likes</span>
 
         <button
           onClick={() => {

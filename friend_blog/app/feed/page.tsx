@@ -8,12 +8,14 @@ import {
 } from "react";
 import PostCard from "./PostCard";
 import { apiFetch } from "../../lib/api";
+import { useToast } from "../components/ToastProvider";
 
 type Post = {
   id: string;
   content: string;
   author?: { username?: string } | null;
   createdAt?: string;
+  likesCount?: number;
 };
 
 export default function FeedPage() {
@@ -24,6 +26,7 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const { showToast } = useToast();
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -55,11 +58,12 @@ export default function FeedPage() {
         }
       } catch (error) {
         console.error("Error fetching posts:", error);
+        showToast("Failed to load posts", "error");
       } finally {
         setLoading(false);
       }
     },
-    [cursor]
+    [cursor, showToast]
   );
 
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function FeedPage() {
 
     if (!token) {
       setMessage("You must be logged in to post.");
+      showToast("You must be logged in to post.", "error");
       return;
     }
 
@@ -88,10 +93,12 @@ export default function FeedPage() {
       setContent("");
       setEditingId(null);
       setMessage(editingId ? "Post updated!" : "Post created!");
+      showToast(editingId ? "Post updated" : "Post created", "success");
       fetchPosts(false);
     } catch (error) {
       console.error("Error saving post:", error);
       setMessage("Failed to save post");
+      showToast("Failed to save post", "error");
     }
   };
 
@@ -106,15 +113,17 @@ export default function FeedPage() {
     try {
       await apiFetch(`/api/posts/${id}`, { method: "DELETE", raw: true });
       setMessage("Post deleted!");
+      showToast("Post deleted", "info");
       fetchPosts(false);
     } catch (error) {
       console.error("Error deleting post:", error);
       setMessage("Failed to delete post");
+      showToast("Failed to delete post", "error");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-6">
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-center mb-6">Your Feed</h1>
 
@@ -165,6 +174,7 @@ export default function FeedPage() {
                   content={post.content}
                   author={post.author?.username || "You"}
                   createdAt={post.createdAt ?? new Date().toISOString()}
+                  likesCount={post.likesCount ?? 0}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />

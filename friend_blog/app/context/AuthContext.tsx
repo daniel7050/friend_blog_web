@@ -105,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (payload: Record<string, unknown>) => {
     try {
       const axios = (await import("../utils/axios")).default;
+      console.log("Registration payload:", payload);
       const res = await axios.post("/api/auth/register", payload);
       const data = res.data;
       if (res.status === 200 && data.token) {
@@ -121,10 +122,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type AxiosErr = {
         response?: {
           status?: number;
-          data?: { message?: string };
+          data?: { message?: string; error?: string; errors?: unknown };
         };
       };
       const axiosErr = err as AxiosErr;
+
+      // Log full error details for debugging network/CORS vs validation issues
+      const errLike = err as { isAxiosError?: boolean; code?: string };
+      const errorObj = err as Error;
+
+      console.error("Registration error (detailed):", {
+        status: axiosErr?.response?.status,
+        data: axiosErr?.response?.data,
+        message: errorObj?.message,
+        isAxiosError: errLike?.isAxiosError,
+        code: errLike?.code,
+        stack: errorObj?.stack,
+      });
 
       // Handle rate limiting (429 Too Many Requests)
       if (axiosErr?.response?.status === 429) {
@@ -135,7 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const msg = axiosErr?.response?.data?.message || String(err);
+      // Extract detailed error message
+      const errorData = axiosErr?.response?.data;
+      const msg =
+        errorData?.message ||
+        errorData?.error ||
+        (errorData?.errors ? JSON.stringify(errorData.errors) : undefined) ||
+        errorObj?.message ||
+        String(err);
       return { ok: false, message: msg || "Network error" };
     }
   };

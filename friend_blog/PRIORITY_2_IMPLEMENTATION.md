@@ -72,7 +72,7 @@ Successfully implemented all Priority 2 features for the Friend Blog frontend. T
 
 **Test Coverage:**
 
-```
+```text
 Total: 18 tests across 2 suites
 ✓ Authentication Flow (4 tests)
   - Register new user
@@ -101,7 +101,7 @@ Total: 18 tests across 2 suites
 
 **Configuration:**
 
-- `playwright.config.ts` — Chrome device, baseURL http://localhost:3000
+- `playwright.config.ts` — Chrome device, baseURL <http://localhost:3000>
 - Auto-starts dev server (`npm run dev`)
 - HTML reporter for test results
 
@@ -176,7 +176,7 @@ if (axiosErr?.response?.status === 429) {
 
 ### Error Handling Flow
 
-```
+```text
 User Action (Login/Register)
     ↓
 Form Validation (Client-side, Zod)
@@ -190,7 +190,7 @@ User Feedback (Error message display)
 
 ### Loading State Flow
 
-```
+```text
 Page Load
     ↓
 Show Skeleton Loader
@@ -202,7 +202,7 @@ Replace Skeleton with Content
 
 ### Authentication Flow
 
-```
+```text
 User Input
     ↓
 React Hook Form (with Zod validation)
@@ -220,7 +220,7 @@ Redirect to Feed
 
 ## Testing Strategy
 
-### Test Types Implemented:
+### Test Types Implemented
 
 1. **Authentication Tests** — Registration, login, validation
 2. **Navigation Tests** — Page access and routing
@@ -228,7 +228,7 @@ Redirect to Feed
 4. **Interaction Tests** — Comments, post details
 5. **UX Tests** — Skeleton visibility, form validation
 
-### Running Test Suite:
+### Running Test Suite
 
 ```bash
 # Install dependencies
@@ -251,14 +251,14 @@ npx playwright show-report
 
 ## Security Considerations
 
-### Implemented:
+### Implemented
 
 - ✅ Form validation on client-side (Zod)
 - ✅ Rate limiting error detection (429 status)
 - ✅ JWT token in localStorage with axios interceptor
 - ✅ Error messages don't expose sensitive data
 
-### Recommended Backend Enhancements:
+### Recommended Backend Enhancements
 
 - 🔄 HttpOnly cookies for token storage (instead of localStorage)
 - 🔄 CSRF token implementation and validation
@@ -270,9 +270,9 @@ npx playwright show-report
 
 ## Performance Metrics
 
-### Bundle Size:
+### Bundle Size
 
-```
+```text
 Routes                          Size      First Load JS
 /                              123 B      102 kB
 /feed                         2.65 kB    125 kB
@@ -288,7 +288,7 @@ Routes                          Size      First Load JS
 Shared Chunks                        102 kB
 ```
 
-### Load Time Improvements:
+### Load Time Improvements
 
 - Skeleton loaders reduce perceived loading time
 - Form validation prevents unnecessary API calls
@@ -298,7 +298,7 @@ Shared Chunks                        102 kB
 
 ## File Structure
 
-```
+```text
 app/
 ├── context/
 │   └── AuthContext.tsx (enhanced with 429 rate limit handling)
@@ -332,14 +332,14 @@ package.json (updated with form validation & testing deps)
 
 ## Remaining Priority 2 Tasks
 
-### Security Improvements (Backend Coordination Required):
+### Security Improvements (Backend Coordination Required)
 
 - [ ] HttpOnly cookie implementation
 - [ ] CSRF token generation and validation
 - [ ] Secure token refresh endpoint
 - [ ] Backend rate limiting headers
 
-### Optional Enhancements:
+### Optional Enhancements
 
 - [ ] Add E2E tests for error scenarios (network failures, invalid credentials)
 - [ ] Add E2E tests for Socket.IO real-time features

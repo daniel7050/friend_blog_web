@@ -10,8 +10,8 @@ export default function Navbar() {
 
   return (
     <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-        <nav className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 justify-between items-center">
+        <nav className="flex flex-wrap items-center gap-3 sm:gap-4">
           <Link href="/" className="text-blue-600 font-bold">
             Friend Blog
           </Link>
@@ -23,7 +23,7 @@ export default function Navbar() {
           </Link>
           <Link
             href="/posts/create"
-            className="text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700"
+            className="text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 w-full sm:w-auto text-center"
           >
             Create
           </Link>
@@ -43,7 +43,7 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           {user ? (
             <>
               <UserAvatar src={user.profileImage} />
