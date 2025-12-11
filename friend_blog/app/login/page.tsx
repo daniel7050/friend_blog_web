@@ -6,12 +6,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginFormData } from "../utils/validation";
 import { useState } from "react";
+import { useToast } from "../components/ToastProvider";
 
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const { showToast } = useToast();
 
   const {
     register,
@@ -28,9 +30,12 @@ export default function Login() {
     const result = await login(data.email, data.password);
     if (result.ok) {
       setMessage("Login successful! 🎉");
+      showToast("Login successful!", "success");
       router.push("/feed");
     } else {
-      setMessage(result.message || "Login failed");
+      const msg = result.message || "Login failed";
+      setMessage(msg);
+      showToast(msg, "error");
     }
 
     setLoading(false);

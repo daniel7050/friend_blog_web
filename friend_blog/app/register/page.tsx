@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/ToastProvider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, type RegisterFormData } from "../utils/validation";
@@ -12,6 +13,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { register: registerUser } = useAuth();
+  const { showToast } = useToast();
 
   const {
     register,
@@ -33,9 +35,12 @@ export default function Register() {
     });
     if (result.ok) {
       setMessage("Registration successful! 🎉 Redirecting...");
+      showToast("Registration successful!", "success");
       router.push("/feed");
     } else {
-      setMessage(result.message || "Registration failed. Please try again.");
+      const msg = result.message || "Registration failed. Please try again.";
+      setMessage(msg);
+      showToast(msg, "error");
     }
 
     setLoading(false);

@@ -83,10 +83,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type AxiosErr = {
         response?: {
           status?: number;
-          data?: { message?: string };
+          data?: { message?: string; error?: string; errors?: unknown };
         };
       };
       const axiosErr = err as AxiosErr;
+      const errLike = err as { isAxiosError?: boolean; code?: string };
+      const errorObj = err as Error;
+
+      console.error("Login error (detailed):", {
+        status: axiosErr?.response?.status,
+        data: axiosErr?.response?.data,
+        message: errorObj?.message,
+        isAxiosError: errLike?.isAxiosError,
+        code: errLike?.code,
+        stack: errorObj?.stack,
+      });
 
       // Handle rate limiting (429 Too Many Requests)
       if (axiosErr?.response?.status === 429) {
@@ -97,7 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const msg = axiosErr?.response?.data?.message || String(err);
+      const errorData = axiosErr?.response?.data;
+      const msg =
+        errorData?.message ||
+        errorData?.error ||
+        (errorData?.errors ? JSON.stringify(errorData.errors) : undefined) ||
+        errorObj?.message ||
+        String(err);
       return { ok: false, message: msg || "Network error" };
     }
   };
