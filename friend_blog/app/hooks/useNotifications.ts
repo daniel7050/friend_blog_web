@@ -7,7 +7,7 @@ export type Notification = {
   id: string;
   userId: string;
   actorId: string;
-  type: "like" | "comment";
+  type: "like" | "comment" | "follow-request";
   data: unknown;
   read: boolean;
   createdAt: string;
@@ -25,6 +25,20 @@ export function useNotifications() {
     if (!token) return;
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const rawUser =
+      typeof window !== "undefined" ? localStorage.getItem("user") : null;
+    let userId: string | undefined;
+    try {
+      userId = rawUser
+        ? (JSON.parse(rawUser)?.id as string | undefined)
+        : undefined;
+      if (!userId && typeof window !== "undefined") {
+        const legacyId = localStorage.getItem("userId");
+        userId = legacyId || undefined;
+      }
+    } catch {
+      // ignore parse errors
+    }
 
     // Initialize socket connection if not already initialized
     if (!socketInstance) {
@@ -42,14 +56,47 @@ export function useNotifications() {
         if (!notification.read) {
           setUnreadCount((prev) => prev + 1);
         }
+        if (
+          notification.type === "follow-request" &&
+          typeof window !== "undefined"
+        ) {
+          window.dispatchEvent(new CustomEvent("follow-requests:increment"));
+        }
       });
+
+      // Optional: listen on per-user channel if backend emits `user:{userId}`
+      if (userId) {
+        socketInstance.on(
+          `user:${userId}` as any,
+          (notification: Notification) => {
+            setNotifications((prev) => [notification, ...prev]);
+            if (!notification.read) {
+              setUnreadCount((prev) => prev + 1);
+            }
+            if (
+              notification.type === "follow-request" &&
+              typeof window !== "undefined"
+            ) {
+              window.dispatchEvent(
+                new CustomEvent("follow-requests:increment")
+              );
+            }
+          }
+        );
+      }
 
       socketInstance.on("connect", () => {
         console.log("Connected to notification server");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("socket:connected"));
+        }
       });
 
       socketInstance.on("disconnect", () => {
         console.log("Disconnected from notification server");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("socket:disconnected"));
+        }
       });
     }
 

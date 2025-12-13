@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "../../lib/api";
+import { useToast } from "../components/ToastProvider";
 
 type User = {
   id: string | number;
@@ -14,6 +15,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
 
   const [following, setFollowing] = useState<string[]>([]);
+  const [requested, setRequested] = useState<string[]>([]);
+  const { showToast } = useToast();
 
   const API_FOLLOW = "http://localhost:5000/api/follow";
 
@@ -34,15 +37,33 @@ export default function UsersPage() {
       setFollowing((data as User[]).map((u) => u.id.toString()));
   }, []);
 
-  const toggleFollow = async (id: string) => {
-    const isFollowing = following.includes(id);
-
-    await apiFetch(`${API_FOLLOW}/${id}`, {
-      method: isFollowing ? "DELETE" : "POST",
-      raw: true,
-    });
-
-    fetchFollowing();
+  const requestFollow = async (id: string) => {
+    try {
+      const { res } = await apiFetch(`${API_FOLLOW}/${id}`, {
+        method: "POST",
+        raw: true,
+      });
+      if (!res.ok) throw new Error("Request follow failed");
+      setRequested((prev) => [...new Set([...prev, id])]);
+      showToast("Follow request sent", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to send follow request", "error");
+    }
+  };
+  const unfollow = async (id: string) => {
+    try {
+      const { res } = await apiFetch(`${API_FOLLOW}/${id}`, {
+        method: "DELETE",
+        raw: true,
+      });
+      if (!res.ok) throw new Error("Unfollow failed");
+      fetchFollowing();
+      showToast("Unfollowed", "info");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to unfollow", "error");
+    }
   };
 
   useEffect(() => {
@@ -77,16 +98,26 @@ export default function UsersPage() {
 
             {typeof window !== "undefined" &&
               localStorage.getItem("userId") !== u.id.toString() && (
-                <button
-                  onClick={() => toggleFollow(u.id.toString())}
-                  className={`px-4 py-1 rounded ${
-                    following.includes(u.id.toString())
-                      ? "bg-red-500 text-white"
-                      : "bg-blue-600 text-white"
-                  }`}
-                >
-                  {following.includes(u.id.toString()) ? "Unfollow" : "Follow"}
-                </button>
+                <>
+                  {following.includes(u.id.toString()) ? (
+                    <button
+                      onClick={() => unfollow(u.id.toString())}
+                      className="px-4 py-1 rounded bg-red-500 text-white"
+                    >
+                      Unfollow
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => requestFollow(u.id.toString())}
+                      className="px-4 py-1 rounded bg-blue-600 text-white disabled:opacity-50"
+                      disabled={requested.includes(u.id.toString())}
+                    >
+                      {requested.includes(u.id.toString())
+                        ? "Requested"
+                        : "Request follow"}
+                    </button>
+                  )}
+                </>
               )}
           </div>
         ))}

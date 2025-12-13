@@ -17,6 +17,12 @@ interface PostCardProps {
   author: string;
   createdAt: string;
   likesCount?: number;
+  imageUrl?: string;
+  imageVariants?: {
+    small?: { url: string };
+    medium?: { url: string };
+    large?: { url: string };
+  };
   onEdit: (id: string, content: string) => void;
   onDelete: (id: string) => void;
 }
@@ -27,6 +33,8 @@ export default function PostCard({
   author,
   createdAt,
   likesCount = 0,
+  imageUrl,
+  imageVariants,
   onEdit,
   onDelete,
 }: PostCardProps) {
@@ -112,7 +120,22 @@ export default function PostCard({
       className="bg-white rounded-lg shadow p-4 mb-4"
       data-testid="post-card"
     >
-      <p className="text-gray-800">{content}</p>
+      <p className="text-gray-800 whitespace-pre-wrap">{content}</p>
+
+      {/* Post image with responsive variants */}
+      {imageUrl && (
+        <div className="mt-3 rounded overflow-hidden">
+          <img
+            src={
+              imageVariants?.medium?.url ||
+              imageVariants?.small?.url ||
+              imageUrl
+            }
+            alt="Post image"
+            className="w-full max-h-96 object-cover"
+          />
+        </div>
+      )}
 
       <div className="flex justify-between text-sm text-gray-600 mt-2">
         <span>by {author}</span>

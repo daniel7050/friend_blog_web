@@ -16,6 +16,12 @@ type Post = {
   author?: { username?: string } | null;
   createdAt?: string;
   likesCount?: number;
+  imageUrl?: string;
+  imageVariants?: {
+    small?: { url: string };
+    medium?: { url: string };
+    large?: { url: string };
+  };
 };
 
 export default function FeedPage() {
@@ -175,6 +181,8 @@ export default function FeedPage() {
                   author={post.author?.username || "You"}
                   createdAt={post.createdAt ?? new Date().toISOString()}
                   likesCount={post.likesCount ?? 0}
+                  imageUrl={post.imageUrl}
+                  imageVariants={post.imageVariants}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />

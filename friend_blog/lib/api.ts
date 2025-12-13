@@ -49,6 +49,15 @@ export async function apiFetch(
       const resp = axiosErr.response;
       if (resp.status === 401 && typeof window !== "undefined") {
         localStorage.removeItem("token");
+        window.dispatchEvent(
+          new CustomEvent("api:error:401", { detail: { status: 401 } })
+        );
+      } else if (resp.status === 403 && typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("api:error:403", {
+            detail: { status: 403, message: (resp.data as any)?.message },
+          })
+        );
       }
       return {
         res: {
