@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { apiFetch } from "../../lib/api";
 
 interface Comment {
@@ -15,6 +16,7 @@ interface PostCardProps {
   id: string;
   content: string;
   author: string;
+  authorId?: string;
   createdAt: string;
   likesCount?: number;
   imageUrl?: string;
@@ -31,6 +33,7 @@ export default function PostCard({
   id,
   content,
   author,
+  authorId,
   createdAt,
   likesCount = 0,
   imageUrl,
@@ -50,6 +53,12 @@ export default function PostCard({
 
   const currentUserId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+
+  const isOwnPost = !!(
+    authorId &&
+    currentUserId &&
+    authorId.toString() === currentUserId
+  );
 
   // Fetch comments
   const loadComments = async () => {
@@ -124,15 +133,17 @@ export default function PostCard({
 
       {/* Post image with responsive variants */}
       {imageUrl && (
-        <div className="mt-3 rounded overflow-hidden">
-          <img
+        <div className="mt-3 rounded overflow-hidden relative w-full h-64">
+          <Image
             src={
               imageVariants?.medium?.url ||
               imageVariants?.small?.url ||
               imageUrl
             }
             alt="Post image"
-            className="w-full max-h-96 object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
       )}
@@ -145,7 +156,13 @@ export default function PostCard({
       <div className="flex gap-4 mt-4 items-center">
         <button
           onClick={toggleLike}
-          className="text-red-500 hover:text-red-700"
+          disabled={isOwnPost}
+          className={`${
+            isOwnPost
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-red-500 hover:text-red-700"
+          }`}
+          title={isOwnPost ? "You can't like your own post" : ""}
         >
           {liked ? "❤️ Liked" : "🤍 Like"}
         </button>
@@ -214,12 +231,18 @@ export default function PostCard({
                 <input
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  className="w-full border rounded p-2"
-                  placeholder="Write a comment..."
+                  disabled={isOwnPost}
+                  className="w-full border rounded p-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder={
+                    isOwnPost
+                      ? "You can't comment on your own post"
+                      : "Write a comment..."
+                  }
                 />
                 <button
                   onClick={submitComment}
-                  className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
+                  disabled={isOwnPost || !commentText.trim()}
+                  className="mt-2 bg-blue-600 text-white px-3 py-1 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   Add Comment
                 </button>

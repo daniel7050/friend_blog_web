@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const axios = (await import("../utils/axios")).default;
       const res = await axios.post("/api/auth/login", { email, password });
       const data = res.data;
-      if (res.status === 200 && data.token) {
+      if (res.status >= 200 && res.status < 300 && data.token) {
         localStorage.setItem("token", data.token);
         setToken(data.token);
         if (data.user) {
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Registration payload:", payload);
       const res = await axios.post("/api/auth/register", payload);
       const data = res.data;
-      if (res.status === 200 && data.token) {
+      if (res.status >= 200 && res.status < 300 && data.token) {
         localStorage.setItem("token", data.token);
         setToken(data.token);
         if (data.user) {

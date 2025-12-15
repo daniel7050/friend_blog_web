@@ -66,23 +66,19 @@ export function useNotifications() {
 
       // Optional: listen on per-user channel if backend emits `user:{userId}`
       if (userId) {
-        socketInstance.on(
-          `user:${userId}` as any,
-          (notification: Notification) => {
-            setNotifications((prev) => [notification, ...prev]);
-            if (!notification.read) {
-              setUnreadCount((prev) => prev + 1);
-            }
-            if (
-              notification.type === "follow-request" &&
-              typeof window !== "undefined"
-            ) {
-              window.dispatchEvent(
-                new CustomEvent("follow-requests:increment")
-              );
-            }
+        const userChannel = `user:${userId}` as const;
+        socketInstance.on(userChannel, (notification: Notification) => {
+          setNotifications((prev) => [notification, ...prev]);
+          if (!notification.read) {
+            setUnreadCount((prev) => prev + 1);
           }
-        );
+          if (
+            notification.type === "follow-request" &&
+            typeof window !== "undefined"
+          ) {
+            window.dispatchEvent(new CustomEvent("follow-requests:increment"));
+          }
+        });
       }
 
       socketInstance.on("connect", () => {

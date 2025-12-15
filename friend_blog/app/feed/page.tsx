@@ -5,6 +5,7 @@ import {
   useCallback,
   ChangeEvent,
   FormEvent,
+  useRef,
 } from "react";
 import PostCard from "./PostCard";
 import { apiFetch } from "../../lib/api";
@@ -13,7 +14,8 @@ import { useToast } from "../components/ToastProvider";
 type Post = {
   id: string;
   content: string;
-  author?: { username?: string } | null;
+  author?: { username?: string; id?: string } | null;
+  authorId?: string;
   createdAt?: string;
   likesCount?: number;
   imageUrl?: string;
@@ -33,6 +35,7 @@ export default function FeedPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const { showToast } = useToast();
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -75,6 +78,21 @@ export default function FeedPage() {
   useEffect(() => {
     fetchPosts(false);
   }, [fetchPosts]);
+
+  // Infinite scroll: load more when sentinel becomes visible
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchPosts(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loading, fetchPosts]);
 
   // 🟢 Create or Update Post
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -179,6 +197,7 @@ export default function FeedPage() {
                   id={post.id}
                   content={post.content}
                   author={post.author?.username || "You"}
+                  authorId={post.authorId || post.author?.id}
                   createdAt={post.createdAt ?? new Date().toISOString()}
                   likesCount={post.likesCount ?? 0}
                   imageUrl={post.imageUrl}
@@ -187,14 +206,12 @@ export default function FeedPage() {
                   onDelete={handleDelete}
                 />
               ))}
-              {hasMore && (
-                <button
-                  onClick={() => fetchPosts(true)}
-                  disabled={loading}
-                  className="w-full mt-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:opacity-50"
-                >
-                  {loading ? "Loading..." : "Load More"}
-                </button>
+              {/* Infinite scroll sentinel */}
+              <div ref={sentinelRef} className="h-1" />
+              {loading && hasMore && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Loading more posts...</p>
+                </div>
               )}
             </>
           ) : (

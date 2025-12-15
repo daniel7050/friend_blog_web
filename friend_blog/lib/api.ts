@@ -53,9 +53,10 @@ export async function apiFetch(
           new CustomEvent("api:error:401", { detail: { status: 401 } })
         );
       } else if (resp.status === 403 && typeof window !== "undefined") {
+        const errorData = resp.data as { message?: string } | undefined;
         window.dispatchEvent(
           new CustomEvent("api:error:403", {
-            detail: { status: 403, message: (resp.data as any)?.message },
+            detail: { status: 403, message: errorData?.message },
           })
         );
       }
