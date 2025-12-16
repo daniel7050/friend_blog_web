@@ -16,10 +16,17 @@ instance.interceptors.request.use(
           (config.headers as Record<string, string>)[
             "Authorization"
           ] = `Bearer ${token}`;
+          console.log(
+            `[axios] Adding Bearer token to ${config.method?.toUpperCase()} ${
+              config.url
+            }`
+          );
+        } else {
+          console.warn("[axios] No token found in localStorage");
         }
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("[axios] Error attaching token:", err);
     }
     return config;
   },

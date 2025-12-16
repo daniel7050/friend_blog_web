@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 import UserAvatar from "./UserAvatar";
@@ -9,54 +10,80 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const { count: followReqCount } = useFollowRequestsCount();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 justify-between items-center">
-        <nav className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <Link href="/" className="text-blue-600 font-bold">
-            Friend Blog
-          </Link>
-          <Link href="/feed" className="text-gray-600 hover:text-blue-600">
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <Link href="/" className="text-blue-600 font-bold text-lg sm:text-xl">
+          Friend Blog
+        </Link>
+
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="md:hidden p-2 rounded-md hover:bg-gray-100"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+
+        {/* Desktop navigation */}
+        <nav className="hidden md:flex items-center gap-4 flex-1 ml-8">
+          <Link
+            href="/feed"
+            className="text-gray-600 hover:text-blue-600 transition"
+          >
             Feed
-          </Link>
-          <Link href="/posts" className="text-gray-600 hover:text-blue-600">
-            My Posts
           </Link>
           <Link
             href="/posts/create"
-            className="text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 w-full sm:w-auto text-center"
+            className="text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition"
           >
             Create
           </Link>
-          <Link href="/users" className="text-gray-600 hover:text-blue-600">
+          <Link
+            href="/users"
+            className="text-gray-600 hover:text-blue-600 transition"
+          >
             Find Users
           </Link>
           <Link
             href="/follow/requests"
-            className="text-gray-600 hover:text-blue-600"
+            className="text-gray-600 hover:text-blue-600 transition relative flex items-center gap-1"
           >
             Follow Requests
             {followReqCount > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs w-5 h-5">
+              <span className="inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs w-5 h-5">
                 {followReqCount}
               </span>
             )}
           </Link>
           <Link
             href="/notifications"
-            className="text-gray-600 hover:text-blue-600 relative"
+            className="text-gray-600 hover:text-blue-600 transition relative flex items-center gap-1"
           >
             🔔 Notifications
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+        <div className="hidden md:flex items-center gap-3 sm:gap-4">
           {user ? (
             <>
               <UserAvatar src={user.profileImage} />
@@ -82,6 +109,84 @@ export default function Navbar() {
             </>
           )}
         </div>
+
+        {/* Mobile menu */}
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 bg-white border-b shadow-lg md:hidden">
+            <nav className="flex flex-col gap-2 p-4">
+              <Link
+                href="/feed"
+                className="text-gray-600 hover:text-blue-600 py-2"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/posts/create"
+                className="text-white bg-blue-600 px-3 py-1 rounded-md hover:bg-blue-700 transition text-center"
+              >
+                Create
+              </Link>
+              <Link
+                href="/users"
+                className="text-gray-600 hover:text-blue-600 py-2"
+              >
+                Find Users
+              </Link>
+              <Link
+                href="/follow/requests"
+                className="text-gray-600 hover:text-blue-600 py-2 flex items-center gap-2"
+              >
+                Follow Requests
+                {followReqCount > 0 && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs w-5 h-5">
+                    {followReqCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/notifications"
+                className="text-gray-600 hover:text-blue-600 py-2 flex items-center gap-2"
+              >
+                🔔 Notifications
+                {unreadCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+              {user ? (
+                <>
+                  <hr className="my-2" />
+                  <span className="text-sm text-gray-700 py-2">
+                    User: {user.username}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-red-600 hover:underline py-2 text-left"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <hr className="my-2" />
+                  <Link
+                    href="/login"
+                    className="text-gray-600 hover:text-blue-600 py-2"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="text-blue-600 border border-blue-600 px-3 py-2 rounded-md text-center"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

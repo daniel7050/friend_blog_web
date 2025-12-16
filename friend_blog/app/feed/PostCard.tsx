@@ -25,7 +25,6 @@ interface PostCardProps {
     medium?: { url: string };
     large?: { url: string };
   };
-  onEdit: (id: string, content: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -38,7 +37,6 @@ export default function PostCard({
   likesCount = 0,
   imageUrl,
   imageVariants,
-  onEdit,
   onDelete,
 }: PostCardProps) {
   // token and API_URL not needed here — apiFetch handles auth and base URL
@@ -126,14 +124,23 @@ export default function PostCard({
 
   return (
     <div
-      className="bg-white rounded-lg shadow p-4 mb-4"
+      className="bg-white rounded-lg shadow hover:shadow-md transition mb-4 p-4 sm:p-6"
       data-testid="post-card"
     >
-      <p className="text-gray-800 whitespace-pre-wrap">{content}</p>
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <p className="text-gray-500 text-sm">{author}</p>
+          <p className="text-gray-400 text-xs">
+            {new Date(createdAt).toLocaleString()}
+          </p>
+        </div>
+      </div>
 
-      {/* Post image with responsive variants */}
+      <p className="text-gray-800 whitespace-pre-wrap text-sm sm:text-base">
+        {content}
+      </p>
       {imageUrl && (
-        <div className="mt-3 rounded overflow-hidden relative w-full h-64">
+        <div className="mt-4 rounded overflow-hidden relative w-full h-40 sm:h-56 md:h-64">
           <Image
             src={
               imageVariants?.medium?.url ||
@@ -143,26 +150,20 @@ export default function PostCard({
             alt="Post image"
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 70vw"
           />
         </div>
       )}
 
-      <div className="flex justify-between text-sm text-gray-600 mt-2">
-        <span>by {author}</span>
+      <div className="flex justify-between text-xs sm:text-sm text-gray-600 mt-3 pt-3 border-t">
+        <span className="font-semibold text-blue-600">by {author}</span>
         <span>{new Date(createdAt).toLocaleString()}</span>
       </div>
 
-      <div className="flex gap-4 mt-4 items-center">
+      <div className="flex flex-wrap gap-2 mt-4 items-center">
         <button
           onClick={toggleLike}
-          disabled={isOwnPost}
-          className={`${
-            isOwnPost
-              ? "text-gray-400 cursor-not-allowed"
-              : "text-red-500 hover:text-red-700"
-          }`}
-          title={isOwnPost ? "You can't like your own post" : ""}
+          className="text-red-500 hover:text-red-700 transition"
         >
           {liked ? "❤️ Liked" : "🤍 Like"}
         </button>
@@ -174,36 +175,32 @@ export default function PostCard({
             setShowComments(!showComments);
             if (!showComments) loadComments();
           }}
-          className="text-blue-500 hover:text-blue-700"
+          className="text-blue-500 hover:text-blue-700 transition"
         >
           💬 Comments
         </button>
 
-        <button
-          onClick={() => onEdit(id, content)}
-          className="text-gray-700 hover:text-gray-900"
-        >
-          Edit
-        </button>
-
-        <button
-          onClick={() => onDelete(id)}
-          className="text-red-500 hover:text-red-700"
-        >
-          Delete
-        </button>
+        {isOwnPost && (
+          <button
+            onClick={() => onDelete(id)}
+            className="text-red-500 hover:text-red-700 transition"
+          >
+            Delete
+          </button>
+        )}
       </div>
 
       {showComments && (
-        <div className="mt-4">
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <div className="mb-2">
             {editingCommentId ? (
               <>
                 <textarea
                   value={editingCommentText}
                   onChange={(e) => setEditingCommentText(e.target.value)}
-                  className="w-full border rounded p-2 mb-2"
+                  className="w-full border rounded p-2 mb-2 text-sm"
                   placeholder="Edit comment..."
+                  rows={2}
                 />
                 <div className="flex gap-2">
                   <button
@@ -211,7 +208,7 @@ export default function PostCard({
                       setCommentText(editingCommentText);
                       submitComment();
                     }}
-                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition"
                   >
                     Save
                   </button>
@@ -220,7 +217,7 @@ export default function PostCard({
                       setEditingCommentId(null);
                       setEditingCommentText("");
                     }}
-                    className="bg-gray-400 text-white px-3 py-1 rounded text-sm"
+                    className="bg-gray-400 text-white px-3 py-1 rounded text-sm hover:bg-gray-500 transition"
                   >
                     Cancel
                   </button>
@@ -231,18 +228,13 @@ export default function PostCard({
                 <input
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  disabled={isOwnPost}
-                  className="w-full border rounded p-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder={
-                    isOwnPost
-                      ? "You can't comment on your own post"
-                      : "Write a comment..."
-                  }
+                  className="w-full border rounded p-2 text-sm"
+                  placeholder="Write a comment..."
                 />
                 <button
                   onClick={submitComment}
-                  disabled={isOwnPost || !commentText.trim()}
-                  className="mt-2 bg-blue-600 text-white px-3 py-1 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!commentText.trim()}
+                  className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-blue-700 transition"
                 >
                   Add Comment
                 </button>

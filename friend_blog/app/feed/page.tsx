@@ -1,12 +1,5 @@
 "use client";
-import {
-  useEffect,
-  useState,
-  useCallback,
-  ChangeEvent,
-  FormEvent,
-  useRef,
-} from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import PostCard from "./PostCard";
 import { apiFetch } from "../../lib/api";
 import { useToast } from "../components/ToastProvider";
@@ -28,18 +21,12 @@ type Post = {
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [content, setContent] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const { showToast } = useToast();
   const sentinelRef = useRef<HTMLDivElement>(null);
-
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   // 🟢 Fetch all posts with cursor-based pagination
   const fetchPosts = useCallback(
@@ -94,44 +81,6 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasMore, loading, fetchPosts]);
 
-  // 🟢 Create or Update Post
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!token) {
-      setMessage("You must be logged in to post.");
-      showToast("You must be logged in to post.", "error");
-      return;
-    }
-
-    const method = editingId ? "PUT" : "POST";
-    const url = editingId ? `${API_URL}/${editingId}` : API_URL;
-
-    try {
-      const { res } = await apiFetch(url.replace(API_URL, "/api/posts"), {
-        method,
-        body: JSON.stringify({ content }),
-      });
-
-      if (!res.ok) throw new Error("Failed to save post");
-      setContent("");
-      setEditingId(null);
-      setMessage(editingId ? "Post updated!" : "Post created!");
-      showToast(editingId ? "Post updated" : "Post created", "success");
-      fetchPosts(false);
-    } catch (error) {
-      console.error("Error saving post:", error);
-      setMessage("Failed to save post");
-      showToast("Failed to save post", "error");
-    }
-  };
-
-  // 🟠 Edit Post
-  const handleEdit = (id: string, content: string) => {
-    setEditingId(id);
-    setContent(content);
-  };
-
   // 🔴 Delete Post
   const handleDelete = async (id: string) => {
     try {
@@ -147,29 +96,11 @@ export default function FeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-6">Your Feed</h1>
-
-        {/* 🟢 Create/Edit Post Form */}
-        <form onSubmit={handleSubmit} className="mb-6">
-          <textarea
-            value={content}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              setContent(e.target.value)
-            }
-            className="w-full border rounded-md p-2 mb-2"
-            placeholder="Write something..."
-            rows={3}
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          >
-            {editingId ? "Update Post" : "Create Post"}
-          </button>
-        </form>
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-6 px-4">
+          Your Feed
+        </h1>
 
         {message && <p className="text-sm text-gray-600 mb-4">{message}</p>}
 
@@ -202,7 +133,6 @@ export default function FeedPage() {
                   likesCount={post.likesCount ?? 0}
                   imageUrl={post.imageUrl}
                   imageVariants={post.imageVariants}
-                  onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
               ))}

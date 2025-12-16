@@ -11,7 +11,7 @@ export function useFollowRequestsCount() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const { res, data } = await apiFetch("/api/follow/requests");
+      const { res, data } = await apiFetch("/api/follow/requests/pending");
       if (res.ok && Array.isArray(data)) {
         setCount((data as unknown[]).length);
       }

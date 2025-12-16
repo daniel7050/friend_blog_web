@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Image from "next/image";
 import Protected from "../../components/Protected";
 import { apiFetch } from "../../../lib/api";
 import { useToast } from "../../components/ToastProvider";
@@ -86,11 +87,15 @@ export default function CreatePostPage() {
             {file && (
               <div className="mt-2">
                 <p className="text-sm text-gray-600 mb-1">Preview:</p>
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt="Selected preview"
-                  className="max-h-64 rounded border"
-                />
+                <div className="relative w-full max-w-sm h-64 overflow-hidden rounded border">
+                  <Image
+                    src={URL.createObjectURL(file)}
+                    alt="Selected preview"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             )}
             <button
