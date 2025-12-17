@@ -10,6 +10,8 @@ type User = {
   name?: string;
 };
 
+const REQUESTED_STORAGE_KEY = "requestedFollowIds";
+
 export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<User[]>([]);
@@ -35,6 +37,44 @@ export default function UsersPage() {
       setFollowing((data as User[]).map((u) => u.id.toString()));
   }, []);
 
+  const loadRequested = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(REQUESTED_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as string[];
+          setRequested(parsed);
+        } catch {
+          // ignore bad cache
+        }
+      }
+    }
+
+    try {
+      const { res, data } = await apiFetch("/api/follow/requests/outgoing");
+      if (res.ok && Array.isArray(data)) {
+        const ids = (data as { toUserId?: string | number }[]) // API may vary
+          .map((req) => req.toUserId)
+          .filter(Boolean)
+          .map((id) => id!.toString());
+        if (ids.length) {
+          setRequested((prev) => {
+            const merged = Array.from(new Set([...prev, ...ids]));
+            if (typeof window !== "undefined") {
+              localStorage.setItem(
+                REQUESTED_STORAGE_KEY,
+                JSON.stringify(merged)
+              );
+            }
+            return merged;
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Unable to load outgoing follow requests", e);
+    }
+  }, []);
+
   const requestFollow = async (id: string) => {
     try {
       const { res, data } = await apiFetch(`/api/follow/${id}`, {
@@ -48,7 +88,13 @@ export default function UsersPage() {
             : (data as { message?: string })?.message || res.statusText;
         throw new Error(detail || "Request follow failed");
       }
-      setRequested((prev) => [...new Set([...prev, id])]);
+      setRequested((prev) => {
+        const merged = [...new Set([...prev, id])];
+        if (typeof window !== "undefined") {
+          localStorage.setItem(REQUESTED_STORAGE_KEY, JSON.stringify(merged));
+        }
+        return merged;
+      });
       showToast("Follow request sent", "success");
     } catch (e) {
       console.error("requestFollow error", e);
@@ -76,7 +122,8 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers();
     fetchFollowing();
-  }, [fetchUsers, fetchFollowing]);
+    loadRequested();
+  }, [fetchUsers, fetchFollowing, loadRequested]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
@@ -122,7 +169,7 @@ export default function UsersPage() {
                       disabled={requested.includes(u.id.toString())}
                     >
                       {requested.includes(u.id.toString())
-                        ? "Requested"
+                        ? "Request been sent"
                         : "Request follow"}
                     </button>
                   )}

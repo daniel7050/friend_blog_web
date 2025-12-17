@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import PostCard from "./PostCard";
 import { apiFetch } from "../../lib/api";
 import { useToast } from "../components/ToastProvider";
+import { useAuth } from "../context/AuthContext";
 
 type Post = {
   id: string;
@@ -26,6 +27,7 @@ export default function FeedPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const { showToast } = useToast();
+  const { user } = useAuth();
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // 🟢 Fetch all posts with cursor-based pagination
@@ -122,20 +124,33 @@ export default function FeedPage() {
             </div>
           ) : posts.length > 0 ? (
             <>
-              {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  id={post.id}
-                  content={post.content}
-                  author={post.author?.username || "You"}
-                  authorId={post.authorId || post.author?.id}
-                  createdAt={post.createdAt ?? new Date().toISOString()}
-                  likesCount={post.likesCount ?? 0}
-                  imageUrl={post.imageUrl}
-                  imageVariants={post.imageVariants}
-                  onDelete={handleDelete}
-                />
-              ))}
+              {posts.map((post) => {
+                // Only show logged-in user's name if we can confirm it's their post via authorId
+                const isOwnPost =
+                  user?.id &&
+                  post.authorId &&
+                  post.authorId.toString() === user.id.toString();
+
+                const displayAuthor =
+                  post.author?.username ||
+                  (isOwnPost && user?.username) ||
+                  "Unknown User";
+
+                return (
+                  <PostCard
+                    key={post.id}
+                    id={post.id}
+                    content={post.content}
+                    author={displayAuthor}
+                    authorId={post.authorId || post.author?.id}
+                    createdAt={post.createdAt ?? new Date().toISOString()}
+                    likesCount={post.likesCount ?? 0}
+                    imageUrl={post.imageUrl}
+                    imageVariants={post.imageVariants}
+                    onDelete={handleDelete}
+                  />
+                );
+              })}
               {/* Infinite scroll sentinel */}
               <div ref={sentinelRef} className="h-1" />
               {loading && hasMore && (

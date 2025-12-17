@@ -8,8 +8,8 @@ export type Notification = {
   id: string;
   userId: string;
   actorId: string;
-  type: "like" | "comment" | "follow_request" | "follow_accepted";
-  data: unknown;
+  type: "like" | "comment" | "follow_request" | "follow_accepted" | string;
+  data: { message?: string; actorName?: string; postId?: string } | unknown;
   read: boolean;
   createdAt: string;
 };
@@ -22,19 +22,19 @@ export function useNotifications() {
 
   const loadExisting = useCallback(async () => {
     try {
-      console.log("[useNotifications] Fetching existing notifications...");
       const { res, data } = await apiFetch("/api/notifications");
-      console.log("[useNotifications] Response:", {
-        ok: res.ok,
-        status: res.status,
-        dataType: Array.isArray(data) ? "array" : typeof data,
-        itemCount: Array.isArray(data) ? data.length : "n/a",
-      });
-      if (res.ok && Array.isArray(data)) {
-        const items = data as Notification[];
+      const items = Array.isArray(data)
+        ? (data as Notification[])
+        : Array.isArray((data as { items?: Notification[] })?.items)
+        ? ((data as { items?: Notification[] }).items as Notification[])
+        : [];
+
+      if (res.ok) {
         setNotifications(items);
         setUnreadCount(items.filter((n) => !n.read).length);
-        console.log("[useNotifications] Loaded", items.length, "notifications");
+        if (!items.length) {
+          console.warn("[useNotifications] No notifications returned from API");
+        }
       } else {
         console.warn("[useNotifications] Failed to load:", res.status, data);
       }
@@ -151,5 +151,7 @@ export function useNotifications() {
     }
   }, []);
 
-  return { notifications, unreadCount, markAsRead };
+  const refresh = loadExisting;
+
+  return { notifications, unreadCount, markAsRead, refresh };
 }

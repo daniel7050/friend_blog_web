@@ -6,6 +6,17 @@ import Protected from "../components/Protected";
 export default function NotificationsPage() {
   const { notifications, markAsRead } = useNotifications();
 
+  const renderTitle = (type: string, actorName?: string | null): string => {
+    if (type === "like") return `❤️ ${actorName || "Someone"} liked your post`;
+    if (type === "comment")
+      return `💬 ${actorName || "Someone"} commented on your post`;
+    if (type === "follow_request")
+      return `👤 ${actorName || "Someone"} sent you a follow request`;
+    if (type === "follow_accepted")
+      return `✅ ${actorName || "Someone"} accepted your follow request`;
+    return "🔔 New notification";
+  };
+
   return (
     <Protected>
       <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -27,16 +38,29 @@ export default function NotificationsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div className="flex-1">
                     <p className="font-semibold text-sm sm:text-base">
-                      {notif.type === "like"
-                        ? "❤️ Someone liked your post"
-                        : notif.type === "comment"
-                        ? "💬 Someone commented on your post"
-                        : notif.type === "follow_request"
-                        ? "👤 New follow request"
-                        : notif.type === "follow_accepted"
-                        ? "✅ Your follow request was accepted"
-                        : "🔔 New notification"}
+                      {renderTitle(
+                        notif.type,
+                        (notif.data as { actorName?: string })?.actorName
+                      )}
                     </p>
+                    {(() => {
+                      const details = (() => {
+                        if (typeof notif.data === "string") return notif.data;
+                        if (
+                          notif.data &&
+                          typeof notif.data === "object" &&
+                          "message" in notif.data
+                        ) {
+                          return (notif.data as { message?: string }).message;
+                        }
+                        return null;
+                      })();
+                      return details ? (
+                        <p className="text-xs sm:text-sm text-gray-700 mt-1 break-words">
+                          {details}
+                        </p>
+                      ) : null;
+                    })()}
                     <p className="text-xs sm:text-sm text-gray-600 mt-1">
                       {new Date(notif.createdAt).toLocaleString()}
                     </p>
