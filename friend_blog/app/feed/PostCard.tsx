@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { apiFetch } from "../../lib/api";
+import { useToast } from "../components/ToastProvider";
+import { useAuth } from "../context/AuthContext";
 
 interface Comment {
   id: string;
@@ -48,15 +50,57 @@ export default function PostCard({
   const [commentText, setCommentText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editPostText, setEditPostText] = useState(content);
+  const [postContent, setPostContent] = useState(content);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
 
-  const currentUserId =
-    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const { user } = useAuth();
+  const currentUserId = (() => {
+    // Prefer AuthContext
+    if (user?.id !== undefined && user?.id !== null) {
+      return String(user.id);
+    }
+    // Fallbacks: stored full user object or legacy userId
+    if (typeof window !== "undefined") {
+      try {
+        const rawUser = localStorage.getItem("user");
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser) as { id?: string | number };
+          if (parsed?.id !== undefined && parsed?.id !== null) {
+            return String(parsed.id);
+          }
+        }
+      } catch {}
+      const legacyId = localStorage.getItem("userId");
+      if (legacyId) return legacyId;
+    }
+    return null;
+  })();
 
-  const isOwnPost = !!(
-    authorId &&
-    currentUserId &&
-    authorId.toString() === currentUserId
+  const isOwnPost = Boolean(
+    authorId && currentUserId && authorId.toString() === currentUserId
   );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDropdown]);
 
   // Fetch comments
   const loadComments = async () => {
@@ -122,6 +166,30 @@ export default function PostCard({
     }
   };
 
+  // Update post content
+  const savePostEdit = async () => {
+    const trimmed = editPostText.trim();
+    if (!trimmed) return;
+    try {
+      const { res, data } = await apiFetch(`/api/posts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ content: trimmed }),
+      });
+      if (res && res.ok) {
+        setPostContent(trimmed);
+        setIsEditingPost(false);
+        setShowDropdown(false);
+        showToast("Post updated", "success");
+      } else {
+        const detail = typeof data === "string" ? data : res.statusText;
+        showToast(`Failed to update (${detail || res.status})`, "error");
+      }
+    } catch (e) {
+      console.error("Error updating post", e);
+      showToast("Error updating post", "error");
+    }
+  };
+
   return (
     <div
       className="bg-white rounded-lg shadow hover:shadow-md transition mb-4 p-4 sm:p-6"
@@ -134,11 +202,77 @@ export default function PostCard({
             {new Date(createdAt).toLocaleString()}
           </p>
         </div>
+        {isOwnPost && (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="text-gray-600 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition"
+              aria-label="Post options"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 16 16">
+                <circle cx="8" cy="3" r="1.5" />
+                <circle cx="8" cy="8" r="1.5" />
+                <circle cx="8" cy="13" r="1.5" />
+              </svg>
+            </button>
+            {showDropdown && (
+              <div className="absolute right-0 mt-1 w-32 bg-white border rounded-lg shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setIsEditingPost(true);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg transition"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(id);
+                    setShowDropdown(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 rounded-b-lg transition"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <p className="text-gray-800 whitespace-pre-wrap text-sm sm:text-base">
-        {content}
-      </p>
+      {isEditingPost ? (
+        <div className="mb-3">
+          <textarea
+            value={editPostText}
+            onChange={(e) => setEditPostText(e.target.value)}
+            className="w-full border rounded p-2 text-sm sm:text-base"
+            rows={4}
+            placeholder="Edit your post..."
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={savePostEdit}
+              disabled={!editPostText.trim()}
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setIsEditingPost(false);
+                setEditPostText(postContent);
+              }}
+              className="bg-gray-400 text-white px-4 py-2 rounded text-sm hover:bg-gray-500 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-800 whitespace-pre-wrap text-sm sm:text-base">
+          {postContent}
+        </p>
+      )}
       {imageUrl && (
         <div className="mt-4 rounded overflow-hidden relative w-full h-40 sm:h-56 md:h-64">
           <Image
@@ -179,15 +313,6 @@ export default function PostCard({
         >
           💬 Comments
         </button>
-
-        {isOwnPost && (
-          <button
-            onClick={() => onDelete(id)}
-            className="text-red-500 hover:text-red-700 transition"
-          >
-            Delete
-          </button>
-        )}
       </div>
 
       {showComments && (

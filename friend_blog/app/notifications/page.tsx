@@ -4,7 +4,7 @@ import { useNotifications } from "../hooks/useNotifications";
 import Protected from "../components/Protected";
 
 export default function NotificationsPage() {
-  const { notifications, markAsRead } = useNotifications();
+  const { notifications, markAsRead, refresh } = useNotifications();
 
   const renderTitle = (type: string, actorName?: string | null): string => {
     if (type === "like") return `❤️ ${actorName || "Someone"} liked your post`;
@@ -20,10 +20,28 @@ export default function NotificationsPage() {
   return (
     <Protected>
       <div className="max-w-2xl mx-auto p-4 sm:p-6 lg:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Notifications</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Notifications</h1>
+          <button
+            onClick={() => {
+              console.log("[NotificationsPage] Manual refresh triggered");
+              refresh?.();
+            }}
+            className="text-sm bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Refresh
+          </button>
+        </div>
 
         {notifications.length === 0 ? (
-          <p className="text-center text-gray-500">No notifications yet.</p>
+          <div>
+            <p className="text-center text-gray-500 mb-4">
+              No notifications yet.
+            </p>
+            <p className="text-center text-xs text-gray-400">
+              Check browser console for debug logs
+            </p>
+          </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {notifications.map((notif) => (

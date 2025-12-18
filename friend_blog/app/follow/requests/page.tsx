@@ -21,17 +21,6 @@ export default function FollowRequestsPage() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
-  const getCurrentUsername = () => {
-    if (typeof window === "undefined") return undefined;
-    const raw = localStorage.getItem("user");
-    if (!raw) return undefined;
-    try {
-      return (JSON.parse(raw) as { username?: string })?.username;
-    } catch {
-      return undefined;
-    }
-  };
-
   const loadRequests = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,27 +47,6 @@ export default function FollowRequestsPage() {
     loadRequests();
   }, [loadRequests]);
 
-  const notifyRequester = async (request: PendingRequest) => {
-    if (!request?.fromUser?.id) return;
-    try {
-      const actorName = getCurrentUsername();
-      await apiFetch(`/api/notifications`, {
-        method: "POST",
-        body: JSON.stringify({
-          type: "follow_accepted",
-          targetUserId: request.fromUser.id,
-          data: {
-            message: `${actorName || "Your follow request"} was accepted`,
-            actorName,
-            requestId: request.id,
-          },
-        }),
-      });
-    } catch (e) {
-      console.warn("Unable to push follow_accepted notification", e);
-    }
-  };
-
   const acceptRequest = async (id: string) => {
     const request = requests.find((r) => r.id === id);
     try {
@@ -95,9 +63,6 @@ export default function FollowRequestsPage() {
       }
       setRequests((prev) => prev.filter((r) => r.id !== id));
       showToast("Follow request accepted", "success");
-      if (request) {
-        notifyRequester(request);
-      }
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("follow-requests:refresh"));
       }
