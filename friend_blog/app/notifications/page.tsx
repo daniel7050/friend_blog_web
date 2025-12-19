@@ -2,18 +2,74 @@
 
 import { useNotifications } from "../hooks/useNotifications";
 import Protected from "../components/Protected";
+import { useEffect } from "react";
 
 export default function NotificationsPage() {
   const { notifications, markAsRead, refresh } = useNotifications();
 
-  const renderTitle = (type: string, actorName?: string | null): string => {
-    if (type === "like") return `❤️ ${actorName || "Someone"} liked your post`;
-    if (type === "comment")
-      return `💬 ${actorName || "Someone"} commented on your post`;
-    if (type === "follow_request")
-      return `👤 ${actorName || "Someone"} sent you a follow request`;
-    if (type === "follow_accepted")
-      return `✅ ${actorName || "Someone"} accepted your follow request`;
+  useEffect(() => {
+    const onConnected = () => {
+      console.log(
+        "[NotificationsPage] Socket connected - refreshing notifications"
+      );
+      refresh?.();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("socket:connected", onConnected);
+
+      // If already authenticated, pull once on mount
+      const token = localStorage.getItem("token");
+      if (token) refresh?.();
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("socket:connected", onConnected);
+      }
+    };
+  }, [refresh]);
+
+  const deriveType = (
+    type: string | null | undefined,
+    data: unknown
+  ): string => {
+    const primary = type ? String(type) : "";
+    const dataType =
+      data && typeof data === "object"
+        ? (data as { type?: string })?.type ||
+          (data as { notificationType?: string })?.notificationType ||
+          (data as { event?: string })?.event ||
+          (data as { kind?: string })?.kind ||
+          (data as { category?: string })?.category ||
+          (data as { message?: string })?.message ||
+          ""
+        : "";
+    return primary || dataType || "";
+  };
+
+  const renderTitle = (
+    type: string,
+    data: unknown,
+    actorName?: string | null
+  ): string => {
+    const who = actorName || "Someone";
+    const normalized = deriveType(type, data).toLowerCase().replace(/-/g, "_");
+
+    if (
+      normalized.includes("follow_accepted") ||
+      normalized.includes("accepted")
+    )
+      return `✅ ${who} accepted your follow request`;
+    if (
+      normalized.includes("follow_request") ||
+      (normalized.includes("follow") && normalized.includes("request"))
+    )
+      return `👤 ${who} sent you a follow request`;
+    if (normalized.includes("follow")) return `👥 ${who} started following you`;
+    if (normalized.includes("like")) return `❤️ ${who} liked your post`;
+    if (normalized.includes("comment"))
+      return `💬 ${who} commented on your post`;
     return "🔔 New notification";
   };
 
@@ -34,14 +90,7 @@ export default function NotificationsPage() {
         </div>
 
         {notifications.length === 0 ? (
-          <div>
-            <p className="text-center text-gray-500 mb-4">
-              No notifications yet.
-            </p>
-            <p className="text-center text-xs text-gray-400">
-              Check browser console for debug logs
-            </p>
-          </div>
+          <p className="text-center text-gray-500">No notifications yet.</p>
         ) : (
           <div className="space-y-3 sm:space-y-4">
             {notifications.map((notif) => (
@@ -58,6 +107,7 @@ export default function NotificationsPage() {
                     <p className="font-semibold text-sm sm:text-base">
                       {renderTitle(
                         notif.type,
+                        notif.data,
                         (notif.data as { actorName?: string })?.actorName
                       )}
                     </p>

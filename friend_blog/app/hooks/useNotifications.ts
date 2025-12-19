@@ -14,6 +14,30 @@ export type Notification = {
   createdAt: string;
 };
 
+const resolveType = (
+  type: string | null | undefined,
+  data: unknown
+): string => {
+  const primary = type ? String(type) : "";
+  const dataType =
+    data && typeof data === "object"
+      ? (data as { type?: string })?.type ||
+        (data as { notificationType?: string })?.notificationType ||
+        (data as { event?: string })?.event ||
+        (data as { kind?: string })?.kind ||
+        (data as { category?: string })?.category ||
+        (data as { action?: string })?.action ||
+        (data as { message?: string })?.message ||
+        ""
+      : "";
+  return (primary || dataType || "").toString();
+};
+
+const normalizeNotification = (n: Notification): Notification => {
+  const normalizedType = resolveType(n?.type, n?.data);
+  return { ...n, type: normalizedType || n?.type || "" };
+};
+
 let socketInstance: Socket | null = null;
 
 export function useNotifications() {
@@ -27,14 +51,17 @@ export function useNotifications() {
         ? (data as Notification[])
         : Array.isArray((data as { items?: Notification[] })?.items)
         ? ((data as { items?: Notification[] }).items as Notification[])
+        : Array.isArray(
+            (data as { notifications?: Notification[] })?.notifications
+          )
+        ? ((data as { notifications?: Notification[] })
+            .notifications as Notification[])
         : [];
 
       if (res.ok) {
-        setNotifications(items);
-        setUnreadCount(items.filter((n) => !n.read).length);
-        if (!items.length) {
-          console.warn("[useNotifications] No notifications returned from API");
-        }
+        const normalized = items.map((n) => normalizeNotification(n));
+        setNotifications(normalized);
+        setUnreadCount(normalized.filter((n) => !n.read).length);
       } else {
         console.warn("[useNotifications] Failed to load:", res.status, data);
       }
@@ -96,8 +123,13 @@ export function useNotifications() {
         "[useNotifications] Received socket notification:",
         notification
       );
-      setNotifications((prev) => [notification, ...prev]);
-      if (!notification.read) {
+      console.log("  Type:", notification.type);
+      console.log("  Actor:", notification.actorId);
+      console.log("  Data:", notification.data);
+
+      const normalized = normalizeNotification(notification);
+      setNotifications((prev) => [normalized, ...prev]);
+      if (!normalized.read) {
         setUnreadCount((prev) => prev + 1);
       }
       if (
@@ -107,6 +139,22 @@ export function useNotifications() {
         window.dispatchEvent(new CustomEvent("follow-requests:increment"));
       }
     };
+
+    // Listen to specific notification types for debugging
+    if (socketInstance) {
+      socketInstance.on("notification:like", (data) => {
+        console.log("[Socket] Like notification:", data);
+      });
+      socketInstance.on("notification:comment", (data) => {
+        console.log("[Socket] Comment notification:", data);
+      });
+      socketInstance.on("notification:follow_request", (data) => {
+        console.log("[Socket] Follow request notification:", data);
+      });
+      socketInstance.on("notification:follow_accepted", (data) => {
+        console.log("[Socket] Follow accepted notification:", data);
+      });
+    }
 
     socketInstance.on("notification", onNotification);
 
