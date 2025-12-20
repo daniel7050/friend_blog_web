@@ -12,6 +12,7 @@ type Post = {
   authorId?: string;
   createdAt?: string;
   likesCount?: number;
+  _count?: { likes?: number };
   imageUrl?: string;
   imageVariants?: {
     small?: { url: string };
@@ -46,10 +47,43 @@ export default function FeedPage() {
             nextCursor: string | null;
             hasNext: boolean;
           };
+
+          // Normalize likes count from various possible backend shapes
+          type BackendPost = Post & {
+            likeCount?: number;
+            likes_count?: number;
+            likes?: number | unknown[];
+            reactions?: { likes?: number | unknown[] };
+          };
+
+          const normalizeLikesCount = (item: BackendPost): number => {
+            // Prisma count field
+            const countLikes = item?._count?.likes;
+            if (typeof countLikes === "number") return countLikes;
+            // Direct numeric fields
+            if (typeof item?.likesCount === "number") return item.likesCount;
+            if (typeof item?.likeCount === "number") return item.likeCount;
+            if (typeof item?.likes_count === "number") return item.likes_count;
+            // Array or number likes field
+            const likes = item?.likes;
+            if (typeof likes === "number") return likes;
+            if (Array.isArray(likes)) return likes.length;
+            // Nested reactions
+            const rLikes = item?.reactions?.likes;
+            if (typeof rLikes === "number") return rLikes;
+            if (Array.isArray(rLikes)) return rLikes.length;
+            return 0;
+          };
+
+          const normalizedItems = (postsData.items || []).map((p) => ({
+            ...p,
+            likesCount: normalizeLikesCount(p as unknown as BackendPost),
+          })) as Post[];
+
           if (isLoadMore) {
-            setPosts((prev) => [...prev, ...(postsData.items || [])]);
+            setPosts((prev) => [...prev, ...normalizedItems]);
           } else {
-            setPosts(postsData.items || []);
+            setPosts(normalizedItems);
           }
           setCursor(postsData.nextCursor || null);
           setHasMore(postsData.hasNext ?? true);

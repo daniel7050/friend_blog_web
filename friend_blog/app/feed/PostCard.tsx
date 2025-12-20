@@ -102,6 +102,25 @@ export default function PostCard({
     };
   }, [showDropdown]);
 
+  // Keep internal like count in sync with prop updates
+  useEffect(() => {
+    setLikeCount(likesCount ?? 0);
+  }, [likesCount]);
+
+  // Load user's like status on mount
+  useEffect(() => {
+    const loadLikeStatus = async () => {
+      const { res, data } = await apiFetch(`/api/posts/${id}/like-status`);
+      if (res && res.ok && data) {
+        const likeStatusData = data as { liked?: boolean } | null;
+        if (typeof likeStatusData?.liked === "boolean") {
+          setLiked(likeStatusData.liked);
+        }
+      }
+    };
+    loadLikeStatus();
+  }, [id]);
+
   // Fetch comments
   const loadComments = async () => {
     const { res, data } = await apiFetch(`/api/posts/${id}/comments`);
@@ -114,18 +133,24 @@ export default function PostCard({
       method: "POST",
     });
     if (res && res.ok && data) {
-      const likeData = data as { liked?: boolean; likesCount?: number } | null;
+      const likeData = data as {
+        liked?: boolean;
+        likesCount?: number;
+      } | null;
 
-      // Prefer backend count if available, otherwise adjust locally
-      if (typeof likeData?.likesCount === "number") {
-        setLikeCount(Math.max(0, likeData.likesCount));
-      } else if (typeof likeData?.liked !== "undefined") {
-        setLikeCount((prev) => Math.max(0, prev + (likeData.liked ? 1 : -1)));
-      }
-
+      // Update both liked status and count from backend response
       if (typeof likeData?.liked !== "undefined") {
         setLiked(Boolean(likeData.liked));
       }
+
+      if (typeof likeData?.likesCount === "number") {
+        setLikeCount(Math.max(0, likeData.likesCount));
+      } else if (typeof likeData?.liked !== "undefined") {
+        // Fallback: adjust count locally if backend doesn't return count
+        setLikeCount((prev) => Math.max(0, prev + (likeData.liked ? 1 : -1)));
+      }
+    } else {
+      showToast("Failed to update like", "error");
     }
   };
 
